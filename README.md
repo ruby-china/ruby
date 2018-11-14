@@ -1,4 +1,4 @@
-# https://github.com/docker-library/ruby
+# This is a fork of https://github.com/docker-library/ruby with slim images built with jemalloc. Images can be found at https://hub.docker.com/r/swipesense/ruby-jemalloc/
 
 ## Maintained by: [the Docker Community](https://github.com/docker-library/ruby)
 
