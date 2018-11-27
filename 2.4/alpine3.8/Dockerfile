@@ -106,6 +106,9 @@ RUN set -ex \
 	&& gem install bundler --version "$BUNDLER_VERSION" --force \
 	&& rm -r /root/.gem/
 
+# Sanity check for jemalloc
+RUN ruby -r rbconfig -e "abort 'jemalloc not enabled' unless RbConfig::CONFIG['LIBS'].include?('jemalloc')"
+
 # install things globally, for great justice
 # and don't create ".bundle" in all our apps
 ENV GEM_HOME /usr/local/bundle
