@@ -18,9 +18,9 @@ latest_gem_version() {
 }
 
 # https://github.com/docker-library/ruby/issues/246
-rubygems='3.0.1'
+rubygems='3.0.3'
 declare -A newEnoughRubygems=(
-	[2.6]=1 # 3.0.1+
+	[2.6]=1 # 2.6.2 => gems 3.0.3
 )
 # TODO once all versions are in this family of "new enough", remove RUBYGEMS_VERSION code entirely
 
@@ -70,7 +70,7 @@ for version in "${versions[@]}"; do
 	echo "$version: $fullVersion; $shaVal"
 
 	for v in \
-		alpine{3.6,3.7,3.8} \
+		alpine{3.7,3.8,3.9} \
 		{jessie,stretch}{/slim,} \
 	; do
 		dir="$version/$v"
@@ -84,6 +84,10 @@ for version in "${versions[@]}"; do
 			*) template='debian'; tag="$variant" ;;
 		esac
 		template="Dockerfile-${template}.template"
+
+		if [ "$variant" = 'slim' ]; then
+			tag+='-slim'
+		fi
 
 		sed -r \
 			-e 's!%%VERSION%%!'"$version"'!g' \
@@ -99,6 +103,13 @@ for version in "${versions[@]}"; do
 			)" \
 			-e 's/^(FROM (debian|buildpack-deps|alpine)):.*/\1:'"$tag"'/' \
 			"$template" > "$dir/Dockerfile"
+
+		case "$variant" in
+			alpine3.8 | alpine3.7)
+				# Alpine 3.9+ uses OpenSSL, but 3.8/3.7 still uses LibreSSL
+				sed -ri -e 's/openssl/libressl/g' "$dir/Dockerfile"
+				;;
+		esac
 
 		if [ -n "${newEnoughRubygems[$version]:-}" ]; then
 			sed -ri -e '/RUBYGEMS_VERSION/d' "$dir/Dockerfile"

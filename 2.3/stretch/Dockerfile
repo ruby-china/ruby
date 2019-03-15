@@ -3,26 +3,26 @@ FROM buildpack-deps:stretch
 # skip installing gem documentation
 RUN mkdir -p /usr/local/etc \
 	&& { \
-		echo 'install: --no-document'; \
-		echo 'update: --no-document'; \
+	echo 'install: --no-document'; \
+	echo 'update: --no-document'; \
 	} >> /usr/local/etc/gemrc
 
 ENV RUBY_MAJOR 2.3
 ENV RUBY_VERSION 2.3.8
 ENV RUBY_DOWNLOAD_SHA256 910f635d84fd0d81ac9bdee0731279e6026cb4cd1315bbbb5dfb22e09c5c1dfe
-ENV RUBYGEMS_VERSION 3.0.1
+ENV RUBYGEMS_VERSION 3.0.3
 
 # some of ruby's build scripts are written in ruby
 #   we purge system ruby later to make sure our final image uses what we just built
 RUN set -ex \
 	\
 	&& buildDeps=' \
-		bison \
-		dpkg-dev \
-		libgdbm-dev \
-		# ruby 2.3 on stretch can only support libssl1.0-dev (libssl dev from buildpack-deps is 1.1.x)
-		libssl1.0-dev \
-		ruby \
+	bison \
+	dpkg-dev \
+	libgdbm-dev \
+	# ruby 2.3 on stretch can only support libssl1.0-dev (libssl dev from buildpack-deps is 1.1.x)
+	libssl1.0-dev \
+	ruby \
 	' \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends $buildDeps \
@@ -37,31 +37,31 @@ RUN set -ex \
 	\
 	&& cd /usr/src/ruby \
 	\
-# hack in "ENABLE_PATH_CHECK" disabling to suppress:
-#   warning: Insecure world writable dir
+	# hack in "ENABLE_PATH_CHECK" disabling to suppress:
+	#   warning: Insecure world writable dir
 	&& { \
-		echo '#define ENABLE_PATH_CHECK 0'; \
-		echo; \
-		cat file.c; \
+	echo '#define ENABLE_PATH_CHECK 0'; \
+	echo; \
+	cat file.c; \
 	} > file.c.new \
 	&& mv file.c.new file.c \
 	\
 	&& autoconf \
 	&& gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
 	&& ./configure \
-		--build="$gnuArch" \
-		--disable-install-doc \
-		--enable-shared \
+	--build="$gnuArch" \
+	--disable-install-doc \
+	--enable-shared \
 	&& make -j "$(nproc)" \
 	&& make install \
 	\
 	&& apt-get purge -y --auto-remove $buildDeps \
 	&& cd / \
 	&& rm -r /usr/src/ruby \
-# make sure bundled "rubygems" is older than RUBYGEMS_VERSION (https://github.com/docker-library/ruby/issues/246)
+	# make sure bundled "rubygems" is older than RUBYGEMS_VERSION (https://github.com/docker-library/ruby/issues/246)
 	&& ruby -e 'exit(Gem::Version.create(ENV["RUBYGEMS_VERSION"]) > Gem::Version.create(Gem::VERSION))' \
 	&& gem update --system "$RUBYGEMS_VERSION" && rm -r /root/.gem/ \
-# rough smoke test
+	# rough smoke test
 	&& ruby --version && gem --version && bundle --version
 
 # install things globally, for great justice
