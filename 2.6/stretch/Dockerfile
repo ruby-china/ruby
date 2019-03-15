@@ -3,8 +3,8 @@ FROM buildpack-deps:stretch
 # skip installing gem documentation
 RUN mkdir -p /usr/local/etc \
 	&& { \
-	echo 'install: --no-document'; \
-	echo 'update: --no-document'; \
+		echo 'install: --no-document'; \
+		echo 'update: --no-document'; \
 	} >> /usr/local/etc/gemrc
 
 ENV RUBY_MAJOR 2.6
@@ -16,10 +16,11 @@ ENV RUBY_DOWNLOAD_SHA256 91fcde77eea8e6206d775a48ac58450afe4883af1a42e5b358320be
 RUN set -ex \
 	\
 	&& buildDeps=' \
-	bison \
-	dpkg-dev \
-	libgdbm-dev \
-	ruby \
+		libjemalloc-dev \
+		bison \
+		dpkg-dev \
+		libgdbm-dev \
+		ruby \
 	' \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends $buildDeps \
@@ -34,29 +35,33 @@ RUN set -ex \
 	\
 	&& cd /usr/src/ruby \
 	\
-	# hack in "ENABLE_PATH_CHECK" disabling to suppress:
-	#   warning: Insecure world writable dir
+# hack in "ENABLE_PATH_CHECK" disabling to suppress:
+#   warning: Insecure world writable dir
 	&& { \
-	echo '#define ENABLE_PATH_CHECK 0'; \
-	echo; \
-	cat file.c; \
+		echo '#define ENABLE_PATH_CHECK 0'; \
+		echo; \
+		cat file.c; \
 	} > file.c.new \
 	&& mv file.c.new file.c \
 	\
 	&& autoconf \
 	&& gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
 	&& ./configure \
-	--build="$gnuArch" \
-	--disable-install-doc \
-	--enable-shared \
+		--build="$gnuArch" \
+		--disable-install-doc \
+		--with-jemalloc \
+		--enable-shared \
 	&& make -j "$(nproc)" \
 	&& make install \
 	\
 	&& apt-get purge -y --auto-remove $buildDeps \
 	&& cd / \
 	&& rm -r /usr/src/ruby \
-	# rough smoke test
+# rough smoke test
 	&& ruby --version && gem --version && bundle --version
+
+# Sanity check for jemalloc
+RUN ruby -r rbconfig -e "abort 'jemalloc not enabled' unless RbConfig::CONFIG['LIBS'].include?('jemalloc')"
 
 # install things globally, for great justice
 # and don't create ".bundle" in all our apps

@@ -96,6 +96,9 @@ RUN set -ex \
 # rough smoke test
 	&& ruby --version && gem --version && bundle --version
 
+# Sanity check for jemalloc
+RUN ruby -r rbconfig -e "abort 'jemalloc not enabled' unless RbConfig::CONFIG['LIBS'].include?('jemalloc')"
+
 # install things globally, for great justice
 # and don't create ".bundle" in all our apps
 ENV GEM_HOME /usr/local/bundle
