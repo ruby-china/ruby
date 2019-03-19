@@ -15,6 +15,17 @@ ENV RUBY_VERSION 2.3.8
 ENV RUBY_DOWNLOAD_SHA256 910f635d84fd0d81ac9bdee0731279e6026cb4cd1315bbbb5dfb22e09c5c1dfe
 ENV RUBYGEMS_VERSION 3.0.3
 
+# Install jemalloc using the package build from alpine 3.6
+RUN apk add --no-cache --virtual .jemalloc-builddeps alpine-sdk
+RUN mkdir jemalloc
+RUN wget -O jemalloc/APKBUILD https://git.alpinelinux.org/aports/plain/main/jemalloc/APKBUILD?h=3.6-stable
+RUN wget -O jemalloc/jemalloc-no-pprof.patch https://git.alpinelinux.org/aports/plain/main/jemalloc/jemalloc-no-pprof.patch?h=3.6-stable
+RUN addgroup root abuild
+RUN cd jemalloc && abuild-keygen -a -i && abuild -F -r
+RUN apk del --no-network .jemalloc-builddeps
+RUN apk add --no-cache /root/packages/x86_64/jemalloc-4.5.0-r0.apk /root/packages/x86_64/jemalloc-dev-4.5.0-r0.apk
+RUN rm -rf /root/packages /jemalloc # Clean up jemalloc source and built package
+
 # some of ruby's build scripts are written in ruby
 #   we purge system ruby later to make sure our final image uses what we just built
 # readline-dev vs libedit-dev: https://bugs.ruby-lang.org/issues/11869 and https://github.com/docker-library/ruby/issues/75
