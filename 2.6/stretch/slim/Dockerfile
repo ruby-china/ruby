@@ -104,7 +104,7 @@ RUN set -eux; \
 	bundle --version
 
 # Sanity check for jemalloc
-RUN ruby -r rbconfig -e "abort 'jemalloc not enabled' unless RbConfig::CONFIG['LIBS'].include?('jemalloc')"
+RUN ruby -r rbconfig -e "abort 'jemalloc not enabled' unless RbConfig::CONFIG['LIBS'].include?('jemalloc') || RbConfig::CONFIG['MAINLIBS'].include?('jemalloc')"
 
 # install things globally, for great justice
 # and don't create ".bundle" in all our apps
