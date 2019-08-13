@@ -20,7 +20,8 @@ latest_gem_version() {
 # https://github.com/docker-library/ruby/issues/246
 rubygems='3.0.3'
 declare -A newEnoughRubygems=(
-	[2.6]=1 # 2.6.2 => gems 3.0.3
+	[2.6]=1 # 2.6.3 => gems 3.0.3 (https://github.com/ruby/ruby/blob/v2_6_3/lib/rubygems.rb#L12)
+	[2.7]=1 # 2.7.0-preview1 => gems 3.1.0.pre1 (https://github.com/ruby/ruby/blob/v2_7_0_preview1/lib/rubygems.rb#L12)
 )
 # TODO once all versions are in this family of "new enough", remove RUBYGEMS_VERSION code entirely
 
@@ -45,15 +46,15 @@ for version in "${versions[@]}"; do
 	for tryVersion in "${allVersions[@]}"; do
 		if \
 			{
-				versionReleasePage="$(echo "$releasesPage" | grep "<td>Ruby $tryVersion</td>" -A 2 | awk -F '"' '$1 == "<td><a href=" { print $2; exit }')" \
+				versionReleasePage="$(grep "<td>Ruby $tryVersion</td>" -A 2 <<<"$releasesPage" | awk -F '"' '$1 == "<td><a href=" { print $2; exit }')" \
 					&& [ "$versionReleasePage" ] \
-					&& shaVal="$(curl -fsSL "https://www.ruby-lang.org/$versionReleasePage" |tac|tac| grep "ruby-$tryVersion.tar.xz" -A 5 | awk '/^SHA256:/ { print $2; exit }')" \
+					&& shaVal="$(curl -fsSL "https://www.ruby-lang.org/$versionReleasePage" |tac|tac| grep "ruby-$tryVersion.tar.xz" -A 5 | awk '$1 == "SHA256:" { print $2; exit }')" \
 					&& [ "$shaVal" ]
 			} \
 			|| {
 				versionReleasePage="$(echo "$newsPage" | grep -oE '<a href="[^"]+">Ruby '"$tryVersion"' Released</a>' | cut -d'"' -f2)" \
 					&& [ "$versionReleasePage" ] \
-					&& shaVal="$(curl -fsSL "https://www.ruby-lang.org/$versionReleasePage" |tac|tac| grep "ruby-$tryVersion.tar.xz" -A 5 | awk '/^SHA256:/ { print $2; exit }')" \
+					&& shaVal="$(curl -fsSL "https://www.ruby-lang.org/$versionReleasePage" |tac|tac| grep "ruby-$tryVersion.tar.xz" -A 5 | awk '$1 == "SHA256:" { print $2; exit }')" \
 					&& [ "$shaVal" ]
 			} \
 		; then
@@ -70,8 +71,8 @@ for version in "${versions[@]}"; do
 	echo "$version: $fullVersion; $shaVal"
 
 	for v in \
-		alpine{3.7,3.8,3.9} \
-		{jessie,stretch}{/slim,} \
+		alpine{3.9,3.10} \
+		{stretch,buster}{/slim,} \
 	; do
 		dir="$version/$v"
 		variant="$(basename "$v")"
@@ -94,24 +95,17 @@ for version in "${versions[@]}"; do
 			-e 's!%%FULL_VERSION%%!'"$fullVersion"'!g' \
 			-e 's!%%SHA256%%!'"$shaVal"'!g' \
 			-e 's!%%RUBYGEMS%%!'"$rubygems"'!g' \
-			-e "$(
-				if [ "$version" = 2.3 ] && [[ "$v" = stretch* ]]; then
-					echo 's/libssl-dev/libssl1.0-dev/g'
-				else
-					echo '/libssl1.0-dev/d'
-				fi
-			)" \
 			-e 's/^(FROM (debian|buildpack-deps|alpine)):.*/\1:'"$tag"'/' \
 			"$template" > "$dir/Dockerfile"
 
-		case "$variant" in
-			alpine3.8 | alpine3.7)
-				# Alpine 3.9+ uses OpenSSL, but 3.8/3.7 still uses LibreSSL
-				sed -ri -e 's/openssl/libressl/g' "$dir/Dockerfile"
+		case "$v" in
+			# https://packages.debian.org/sid/libgdbm-compat-dev (needed for "dbm" core module, but only in Buster+)
+			stretch/slim)
+				sed -i -e '/libgdbm-compat-dev/d' "$dir/Dockerfile"
 				;;
 		esac
 
-		if [ -n "${newEnoughRubygems[$version]:-}" ]; then
+		if [ -n "${newEnoughRubygems[$rcVersion]:-}" ]; then
 			sed -ri -e '/RUBYGEMS_VERSION/d' "$dir/Dockerfile"
 		fi
 

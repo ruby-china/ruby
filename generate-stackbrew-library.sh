@@ -6,10 +6,13 @@ declare -A aliases=(
 	[2.7-rc]='rc'
 )
 
-defaultDebianSuite='stretch'
-defaultAlpineVersion='3.9'
+defaultDebianSuite='buster'
+declare -A debianSuites=(
+	#[2.7-rc]='buster'
+)
+defaultAlpineVersion='3.10'
 declare -A alpineVersion=(
-	[2.3]='3.8'
+	#[2.3]='3.8'
 )
 
 self="$(basename "$BASH_SOURCE")"
@@ -76,14 +79,14 @@ join() {
 
 for version in "${versions[@]}"; do
 	for v in \
-		{stretch,jessie}{,/slim} \
-		alpine{3.9,3.8,3.7} \
+		{buster,stretch}{,/slim} \
+		alpine{3.10,3.9} \
 	; do
 		dir="$version/$v"
 		variant="$(basename "$v")"
 
 		if [ "$variant" = 'slim' ]; then
-			# convert "slim" into "slim-jessie"
+			# convert "slim" into "slim-buster"
 			# https://github.com/docker-library/ruby/pull/142#issuecomment-320012893
 			variant="$variant-$(basename "$(dirname "$v")")"
 		fi
@@ -101,12 +104,13 @@ for version in "${versions[@]}"; do
 		)
 
 		variantAliases=( "${versionAliases[@]/%/-$variant}" )
+		debianSuite="${debianSuites[$version]:-$defaultDebianSuite}"
 		case "$variant" in
-			"$defaultDebianSuite")
+			"$debianSuite")
 				variantAliases+=( "${versionAliases[@]}" )
 				;;
-			*-"$defaultDebianSuite")
-				variantAliases+=( "${versionAliases[@]/%/-${variant%-$defaultDebianSuite}}" )
+			*-"$debianSuite")
+				variantAliases+=( "${versionAliases[@]/%/-${variant%-$debianSuite}}" )
 				;;
 			"alpine${alpineVersion[$version]:-$defaultAlpineVersion}")
 				variantAliases+=( "${versionAliases[@]/%/-alpine}" )
