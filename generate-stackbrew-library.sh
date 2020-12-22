@@ -10,7 +10,7 @@ defaultDebianSuite='buster'
 declare -A debianSuites=(
 	#[2.7]='buster'
 )
-defaultAlpineVersion='3.11'
+defaultAlpineVersion='3.12'
 declare -A alpineVersion=(
 	#[2.3]='3.8'
 )
@@ -64,7 +64,6 @@ getArches 'ruby'
 
 cat <<-EOH
 # this file is generated via https://github.com/docker-library/ruby/blob/$(fileCommit "$self")/$self
-
 Maintainers: Tianon Gravi <admwiggin@gmail.com> (@tianon),
              Joseph Ferguson <yosifkit@gmail.com> (@yosifkit)
 GitRepo: https://github.com/docker-library/ruby.git
@@ -80,7 +79,7 @@ join() {
 for version in "${versions[@]}"; do
 	for v in \
 		{buster,stretch}{,/slim} \
-		alpine{3.11,3.10} \
+		alpine{3.12,3.11} \
 	; do
 		dir="$version/$v"
 		variant="$(basename "$v")"
