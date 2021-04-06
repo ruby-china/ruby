@@ -1,4 +1,6 @@
-# This is a fork of https://github.com/docker-library/ruby built with jemalloc. Images can be found at https://hub.docker.com/r/rubychina/ruby/
+# Ruby with jemalloc Docker
+
+This is a fork of https://github.com/docker-library/ruby built with jemalloc. Images can be found at https://hub.docker.com/r/rubychina/ruby/
 
 ## Maintained by: [the Docker Community](https://github.com/docker-library/ruby)
 
